@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
-	"strings"
+	"os/exec"
 	"syscall"
 	"time"
 )
@@ -59,81 +56,25 @@ func run_sysc() {
 	syscall.Sync()
 }
 
-func run_cd(args []string) {
-	if len(args) > 1 {
-		os.Chdir(args[1])
-	}
-}
-
-func run_ls(args []string) {
-	var dir string
-	if len(args) > 1 {
-		dir = args[1]
-	} else {
-		dir = "."
-	}
-	files, _ := ioutil.ReadDir(dir)
-	for _, f := range files {
-		fmt.Println(f.Name())
-	}
-}
-
-func run_cat(args []string) {
-	if len(args) == 1 {
-		_, err := io.Copy(os.Stdout, os.Stdin)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-	} else {
-		for _, file_name := range args[1:] {
-			fd, err := os.Open(file_name)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
-			_, err = io.Copy(os.Stdout, fd)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
-		}
-	}
-}
-
-func run(args []string) {
-	fmt.Println("Running", args[0], "with arguments", args[1:])
-	/* Check for internal commands */
-	switch args[0] {
-	case "cd":
-		run_cd(args)
-	case "ls":
-		run_ls(args)
-	case "cat":
-		run_cat(args)
-	case "reboot":
-		run_reboot()
-	case "halt":
-		run_halt()
-	case "poweroff":
-		run_poweroff()
-	default:
-		fmt.Println("External command")
-	}
-}
-
 func shell() {
-	for {
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("> ")
-
-		line, _ := reader.ReadString('\n')
-		line = strings.Trim(line, "\n")
-
-		args := strings.Split(line, " ")
-		if len(args) > 0 {
-			run(args)
-		} else {
-			fmt.Println("null-command")
+	cmd := exec.Command("/bin/gosh", "")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	/* Process will wait for command to return.
+	This is intentional for now, since there is no other job to be done.
+	*/
+	fmt.Println("Starting gosh")
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		err = cmd.Wait()
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
+	fmt.Println("Back to init")
 }
 
 func nothing() {
