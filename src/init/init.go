@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"init/login"
 	"os"
-	"os/exec"
 	"syscall"
 	"time"
 )
@@ -56,37 +56,23 @@ func run_sysc() {
 	syscall.Sync()
 }
 
-func shell() {
-	cmd := exec.Command("/bin/gosh", "")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	/* Process will wait for command to return.
-	This is intentional for now, since there is no other job to be done.
-	*/
-	fmt.Println("Starting gosh")
-	err := cmd.Start()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		err = cmd.Wait()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-	fmt.Println("Back to init")
-}
-
 func nothing() {
 	for {
 		time.Sleep(time.Second)
 	}
 }
 
+func provideLoginPrompt() {
+	/* Endless loop providing login mechanism. */
+	for {
+		login.GetPrompt()
+	}
+}
+
 func main() {
 	if os.Getpid() != 1 {
 		fmt.Fprintln(os.Stderr, "Only the kernel can summon me!")
-		nothing()
+		os.Exit(1)
 	}
 
 	fmt.Println("Welcome to GoLinux!")
@@ -95,8 +81,8 @@ func main() {
 	mount_procfs()
 	mount_sysfs()
 
-	/* Start a minimal shell to interact with the kernel. */
-	shell()
+	/* Provide multiuser login. */
+	provideLoginPrompt()
 
 	/*
 		This point should never be reached since it would cause

@@ -86,6 +86,15 @@ func run_exit(args []string) {
 	}
 }
 
+func run_tellmemore() {
+	fmt.Println("PID:", os.Getpid())
+	fmt.Println("PPID:", os.Getppid())
+	fmt.Println("User ID:", os.Getuid())
+	fmt.Println("Group ID:", os.Getgid())
+	fmt.Println("Effective User ID:", os.Geteuid())
+	fmt.Println("Effective Group ID:", os.Getegid())
+}
+
 func run_external(args []string) {
 	cmd := exec.Command(args[0])
 	cmd.Stdin = os.Stdin
@@ -123,6 +132,8 @@ func run(args []string) {
 		run_poweroff()
 	case "exit":
 		run_exit(args)
+	case "tellmemore":
+		run_tellmemore()
 	default:
 		run_external(args)
 	}
