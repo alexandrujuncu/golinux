@@ -70,6 +70,10 @@ func run(args []string) {
 		run_exit(args)
 	case "tellmemore":
 		run_tellmemore()
+	case "env":
+		run_env(args)
+	case "pwd":
+		run_pwd(args)
 	default:
 		run_external(args)
 	}
@@ -85,6 +89,34 @@ func getPrompt() string {
 
 func Shell() {
 	fmt.Println("Welcome to Gosh!")
+
+	/* Change into home directory, if set. */
+	dir := os.Getenv("HOME")
+	if strings.Compare(dir, "") == 0 {
+		err := os.Chdir(dir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	} else {
+		/* If, by change, PWD was set by parent, use it. */
+		dir = os.Getenv("PWD")
+		if strings.Compare(dir, "") == 0 {
+			err := os.Chdir(dir)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		} else {
+			/* User / as current dir. */
+			dir = "/"
+			err := os.Chdir(dir)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		}
+	}
+	/* Set PWD environment variable as directory above. */
+	os.Setenv("PWD", dir)
+
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print(getPrompt())
