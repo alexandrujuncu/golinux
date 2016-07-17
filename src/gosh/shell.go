@@ -3,75 +3,11 @@ package gosh
 import (
 	"bufio"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
-	"syscall"
 )
-
-func run_reboot() {
-	/* Sync first to prevent data loss.*/
-	syscall.Sync()
-	syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
-}
-
-func run_halt() {
-	/* Sync first to prevent data loss.*/
-	syscall.Sync()
-	syscall.Reboot(syscall.LINUX_REBOOT_CMD_HALT)
-}
-
-func run_poweroff() {
-	/* Sync first to prevent data loss.*/
-	syscall.Sync()
-	syscall.Reboot(syscall.LINUX_REBOOT_CMD_POWER_OFF)
-}
-
-func run_sysc() {
-	syscall.Sync()
-}
-
-func run_cd(args []string) {
-	if len(args) > 1 {
-		os.Chdir(args[1])
-	}
-}
-
-func run_ls(args []string) {
-	var dir string
-	if len(args) > 1 {
-		dir = args[1]
-	} else {
-		dir = "."
-	}
-	files, _ := ioutil.ReadDir(dir)
-	for _, f := range files {
-		fmt.Println(f.Name())
-	}
-}
-
-func run_cat(args []string) {
-	if len(args) == 1 {
-		_, err := io.Copy(os.Stdout, os.Stdin)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-	} else {
-		for _, file_name := range args[1:] {
-			fd, err := os.Open(file_name)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
-			_, err = io.Copy(os.Stdout, fd)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
-		}
-	}
-}
 
 func run_exit(args []string) {
 	if len(args) > 1 {
@@ -125,11 +61,11 @@ func run(args []string) {
 	case "cat":
 		run_cat(args)
 	case "reboot":
-		run_reboot()
+		run_reboot(args)
 	case "halt":
-		run_halt()
+		run_halt(args)
 	case "poweroff":
-		run_poweroff()
+		run_poweroff(args)
 	case "exit":
 		run_exit(args)
 	case "tellmemore":
@@ -139,20 +75,26 @@ func run(args []string) {
 	}
 }
 
+func getPrompt() string {
+	if os.Getuid() == 0 {
+		return "# "
+	} else {
+		return "$ "
+	}
+}
+
 func Shell() {
 	fmt.Println("Welcome to Gosh!")
 	for {
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("> ")
+		fmt.Print(getPrompt())
 
 		line, _ := reader.ReadString('\n')
-		line = strings.Trim(line, "\n")
+		line = strings.TrimSpace(line)
 
-		args := strings.Split(line, " ")
-		if len(args) > 0 {
+		if line != "" {
+			args := strings.Split(line, " ")
 			run(args)
-		} else {
-			fmt.Println("null-command")
 		}
 	}
 }
