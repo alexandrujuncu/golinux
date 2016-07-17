@@ -1,8 +1,8 @@
-package main
+package goinit
 
 import (
 	"fmt"
-	"init/login"
+	"goinit/login"
 	"os"
 	"syscall"
 	"time"
@@ -69,7 +69,7 @@ func provideLoginPrompt() {
 	}
 }
 
-func main() {
+func Init() {
 	if os.Getpid() != 1 {
 		fmt.Fprintln(os.Stderr, "Only the kernel can summon me!")
 		os.Exit(1)

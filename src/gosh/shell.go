@@ -1,4 +1,4 @@
-package main
+package gosh
 
 import (
 	"bufio"
@@ -139,7 +139,8 @@ func run(args []string) {
 	}
 }
 
-func shell() {
+func Shell() {
+	fmt.Println("Welcome to Gosh!")
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("> ")
@@ -154,9 +155,4 @@ func shell() {
 			fmt.Println("null-command")
 		}
 	}
-}
-
-func main() {
-	fmt.Println("Welcome to Gosh!")
-	shell()
 }
