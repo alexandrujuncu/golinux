@@ -74,6 +74,10 @@ func run(args []string) {
 		run_env(args)
 	case "pwd":
 		run_pwd(args)
+	case "mkdir":
+		run_mkdir(args)
+	case "mount":
+		run_mount(args)
 	default:
 		run_external(args)
 	}

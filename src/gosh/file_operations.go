@@ -1,6 +1,7 @@
 package gosh
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -38,4 +39,19 @@ func run_cat(args []string) {
 			}
 		}
 	}
+}
+
+func run_mkdir(args []string) (int, error) {
+	if len(args) == 1 {
+		err := errors.New("missing operand")
+		return 1, err
+	} else {
+		for i := 1; i < len(args); i++ {
+			err := os.Mkdir(args[i], 0777)
+			if err != nil {
+				return 1, err
+			}
+		}
+	}
+	return 0, nil
 }
