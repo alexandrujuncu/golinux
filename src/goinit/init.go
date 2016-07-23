@@ -8,30 +8,46 @@ import (
 	"time"
 )
 
-func mount_procfs() {
-	var err error
+func mountProcfs() error {
+	/* Check if /proc exists and, if not, create it. */
+	if _, err := os.Stat("/proc"); err != nil {
+		if os.IsNotExist(err) {
+			err = os.Mkdir("/proc", 0755)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
-	err = os.Mkdir("/proc", 0555)
-	if err != nil {
-		fmt.Println("Error creating /proc.", err)
-	}
-	err = syscall.Mount("/proc", "proc", "proc", 0, "")
-	if err != nil {
-		fmt.Println("Error mounting procfs.", err)
-	}
+	return syscall.Mount("/proc", "proc", "proc", 0, "")
 }
 
-func mount_sysfs() {
-	var err error
+func mountSysfs() error {
+	/* Check if /sys exists and, if not, create it. */
+	if _, err := os.Stat("/sys"); err != nil {
+		if os.IsNotExist(err) {
+			err = os.Mkdir("/sys", 0755)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
-	err = os.Mkdir("/sys", 0555)
-	if err != nil {
-		fmt.Println("Error creating /sys.", err)
+	return syscall.Mount("/sys", "sys", "sysfs", 0, "")
+}
+
+func mountDevtmpfs() error {
+	/* /dev should always be there, but just in case it's not, create it. */
+	if _, err := os.Stat("/dev"); err != nil {
+		if os.IsNotExist(err) {
+			err = os.Mkdir("/dev", 0755)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	err = syscall.Mount("/sys", "sys", "sysfs", 0, "")
-	if err != nil {
-		fmt.Println("Error mounting sysfs.", err)
-	}
+
+	return syscall.Mount("/dev", "dev", "devtmpfs", 0, "")
 }
 
 func run_reboot() {
@@ -70,6 +86,8 @@ func provideLoginPrompt() {
 }
 
 func Init() {
+	var err error
+
 	if os.Getpid() != 1 {
 		fmt.Fprintln(os.Stderr, "Only the kernel can summon me!")
 		os.Exit(1)
@@ -78,8 +96,31 @@ func Init() {
 	fmt.Println("Welcome to GoLinux!")
 
 	/* Mount filesystems used to talk to the kernel. */
-	mount_procfs()
-	mount_sysfs()
+
+	/*
+        Procfs is used by several tools to get information about the
+	system. On Linux system is de facto mandatory.
+        */
+	err = mountProcfs()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	/* Sysfs is rather new, but most kernels should support it.*/
+	err = mountSysfs()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	/*
+        /dev should always be provided by the kernel, but not populated.
+	We don't have udev in init so we try to use devtmpfs is availabe
+	in the kernel.
+	*/
+	err = mountDevtmpfs()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
 
 	/* Provide multiuser login. */
 	provideLoginPrompt()
