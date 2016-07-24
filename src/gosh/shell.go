@@ -44,6 +44,10 @@ func run(args []string) (int, error) {
 	}
 }
 
+func runCommandLine(token *ParserToken) {
+
+}
+
 func getPrompt() string {
 	if os.Getuid() == 0 {
 		return "# "
@@ -93,8 +97,9 @@ func Shell() {
 		line = strings.TrimSpace(line)
 
 		if line != "" {
-			args := strings.Split(line, " ")
-			run(args)
+			token, _ := ParseCommandLine(line)
+			fmt.Println("Processed", DebugParserTree(token))
+			runCommandLine(token)
 		}
 	}
 }
