@@ -44,6 +44,10 @@ func run(args []string) (int, error) {
 	}
 }
 
+func runCommandLine(token *ParserToken) {
+
+}
+
 func getPrompt() string {
 	if os.Getuid() == 0 {
 		return "# "
