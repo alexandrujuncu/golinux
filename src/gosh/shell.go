@@ -5,39 +5,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 )
 
-func run_exit(args []string) {
-	if len(args) > 1 {
-		code, err := strconv.ParseInt(args[1], 10, 64)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		} else {
-			os.Exit(int(code))
-		}
-	} else {
-		os.Exit(0)
-	}
-}
-
-func run_tellmemore() {
-	fmt.Println("PID:", os.Getpid())
-	fmt.Println("PPID:", os.Getppid())
-	fmt.Println("User ID:", os.Getuid())
-	fmt.Println("Group ID:", os.Getgid())
-	fmt.Println("Effective User ID:", os.Geteuid())
-	fmt.Println("Effective Group ID:", os.Getegid())
-}
-
-func run_external(args []string) {
+func runExternal(args []string) (int, error) {
+	fmt.Println("[DEBUG] Running external command ", args[0], "with arguments", args[1:])
 	cmd := exec.Command(args[0])
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Println("Forking into", args[0])
+	fmt.Println("[DEBUG] Forking into", args[0])
 	err := cmd.Start()
 	if err != nil {
 		fmt.Println(err)
@@ -47,39 +25,22 @@ func run_external(args []string) {
 			fmt.Println(err)
 		}
 	}
-	fmt.Println("Back to gosh")
+	fmt.Println("[DEBUG] Back to gosh")
+	if err != nil {
+		return 1, err
+	} else {
+		return 0, err
+	}
 }
 
-func run(args []string) {
-	fmt.Println("Running", args[0], "with arguments", args[1:])
-	/* Check for internal commands */
-	switch args[0] {
-	case "cd":
-		run_cd(args)
-	case "ls":
-		run_ls(args)
-	case "cat":
-		run_cat(args)
-	case "reboot":
-		run_reboot(args)
-	case "halt":
-		run_halt(args)
-	case "poweroff":
-		run_poweroff(args)
-	case "exit":
-		run_exit(args)
-	case "tellmemore":
-		run_tellmemore()
-	case "env":
-		run_env(args)
-	case "pwd":
-		run_pwd(args)
-	case "mkdir":
-		run_mkdir(args)
-	case "mount":
-		run_mount(args)
-	default:
-		run_external(args)
+func run(args []string) (int, error) {
+	/* Check if internal or built in command. Anything else is external.*/
+	if isInternalCommand(args[0]) {
+		return runInternalCommand(args)
+	} else if isBuiltinCommand(args[0]) {
+		return runBuiltinCommand(args)
+	} else {
+		return runExternal(args)
 	}
 }
 
@@ -102,7 +63,7 @@ func Shell() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	} else {
-		/* If, by change, PWD was set by parent, use it. */
+		/* If, by chance, PWD was set by parent, use it. */
 		dir = os.Getenv("PWD")
 		if strings.Compare(dir, "") == 0 {
 			err := os.Chdir(dir)
@@ -110,7 +71,7 @@ func Shell() {
 				fmt.Fprintln(os.Stderr, err)
 			}
 		} else {
-			/* User / as current dir. */
+			/* Use / as current dir. */
 			dir = "/"
 			err := os.Chdir(dir)
 			if err != nil {
@@ -120,6 +81,9 @@ func Shell() {
 	}
 	/* Set PWD environment variable as directory above. */
 	os.Setenv("PWD", dir)
+
+	/* Set a default PATH value. */
+	os.Setenv("PATH", "/bin")
 
 	for {
 		reader := bufio.NewReader(os.Stdin)
